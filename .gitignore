@@ -1,0 +1,22 @@
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Runtime output
+runs/
+*.log
+
+# Local build artifacts
+*.o
+deepstream_yolo26_rtsp_target_control
+csi_h264_rtsp_server
+
+# Local virtual environments and machine-specific Python runtimes
+.venv/
+.venv-*/
+third_party/DeepStream-Yolo/.venv-yolo26-sys/
+
+# Legacy local vendor archive kept on this Jetson but not needed in git
+vendor/e-CAM121_CUONX/e-CAM121_CUONX_JETSON_ONX_ONANO_L4T35.4.1_04-SEP-2023_R03.tar.gz

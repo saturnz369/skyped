@@ -1,0 +1,572 @@
+diff --git a/hardware/nvidia/t23x/nv-public/overlay/Makefile b/hardware/nvidia/t23x/nv-public/overlay/Makefile
+index 93728f4..115b7ec 100644
+--- a/hardware/nvidia/t23x/nv-public/overlay/Makefile
++++ b/hardware/nvidia/t23x/nv-public/overlay/Makefile
+@@ -65,6 +65,7 @@ dtbo-y += tegra234-p3767-camera-p3768-imx219-A.dtbo
+ dtbo-y += tegra234-p3767-camera-p3768-imx219-imx477.dtbo
+ dtbo-y += tegra234-p3767-camera-p3768-imx477-C.dtbo
+ dtbo-y += tegra234-p3767-camera-p3768-imx477-A.dtbo
++dtbo-y += tegra234-p3767-0000-p3768-0000-a0-4lane-imx412.dtbo
+ 
+ ifneq ($(dtb-y),)
+ dtb-y := $(addprefix $(makefile-path)/,$(dtb-y))
+diff --git a/hardware/nvidia/t23x/nv-public/overlay/eimx412_0000_4lane_modes.dtsi b/hardware/nvidia/t23x/nv-public/overlay/eimx412_0000_4lane_modes.dtsi
+new file mode 100644
+index 0000000..fa02e0a
+--- /dev/null
++++ b/hardware/nvidia/t23x/nv-public/overlay/eimx412_0000_4lane_modes.dtsi
+@@ -0,0 +1,328 @@
++				mode0 { // IMX412_MODE_4056x3040_60FPS 
++					mclk_khz = "37215";
++					num_lanes = "4";
++					tegra_sinterface = "serial_c";
++					
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++					dynamic_pixel_bit_depth = "10";
++					
++					csi_pixel_bit_depth = "10";
++					mode_type = "bayer";
++				        pixel_phase = "bggr";
++
++					active_w = "4056";
++					active_h = "3040";
++					readout_orientation = "0";
++					line_length = "6224";
++					inherent_gain = "1";
++					mclk_multiplier = "1";
++					pix_clk_hz = "748596480";
++
++					gain_factor = "100";
++					min_gain_val = "100";
++					max_gain_val = "2200"; // 10.66x 
++					step_gain_val = "1";
++					default_gain = "100"; // 1.00x 
++					
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++
++					framerate_factor = "1000000";
++					min_framerate = "10000000";
++					max_framerate = "60000000";
++					step_framerate = "1";
++					default_framerate = "60000000";
++
++					exposure_factor = "1000000";
++					min_exp_time = "450"; // us
++					max_exp_time = "100000"; // us 
++					step_exp_time = "1";
++					default_exp_time = "16666";
++
++					embedded_metadata_height = "0";
++				};
++/*												
++				mode1 { // IMX412_MODE_4056x3040_40FPS
++					mclk_khz = "37215";
++					num_lanes = "4";
++					tegra_sinterface = "serial_c";
++					
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++					dynamic_pixel_bit_depth = "12";
++					
++					csi_pixel_bit_depth = "12";
++					mode_type = "bayer";
++				        pixel_phase = "bggr";
++
++					active_w = "4056";
++					active_h = "3040";
++					readout_orientation = "0";
++					line_length = "6224";
++					inherent_gain = "1";
++					mclk_multiplier = "1";
++					//pix_clk_hz = "499064320";
++					pix_clk_hz = "748596480";
++
++					gain_factor = "100";
++					min_gain_val = "100";
++					max_gain_val = "2200"; 
++					step_gain_val = "1";
++					default_gain = "100"; 
++
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++
++					framerate_factor = "1000000";
++					min_framerate = "10000000";
++					max_framerate = "40000000";
++					step_framerate = "1";
++					default_framerate = "40000000";
++
++					exposure_factor = "1000000";
++					min_exp_time = "450"; // us
++					max_exp_time = "100000"; // us 
++					step_exp_time = "1";
++					default_exp_time = "25000";
++
++					embedded_metadata_height = "0";
++				};			
++*/
++				mode1 { // IMX412_MODE_4056x3040_30FPS 
++					mclk_khz = "37215";
++					num_lanes = "4";
++					tegra_sinterface = "serial_c";
++					
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++					dynamic_pixel_bit_depth = "12";
++					
++					csi_pixel_bit_depth = "12";
++					mode_type = "bayer";
++				        pixel_phase = "bggr";
++
++					active_w = "4056";
++					active_h = "3040";
++					readout_orientation = "0";
++					line_length = "6224";
++					inherent_gain = "1";
++					mclk_multiplier = "1";
++					pix_clk_hz = "374298240";
++
++					gain_factor = "100";
++					min_gain_val = "100";
++					max_gain_val = "2200"; // 10.66x 
++					step_gain_val = "1";
++					default_gain = "100"; // 1.00x 
++
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++
++					framerate_factor = "1000000";
++					min_framerate = "10000000";
++					max_framerate = "30000000";
++					step_framerate = "1";
++					default_framerate = "30000000";
++
++					exposure_factor = "1000000";
++					min_exp_time = "450"; // us
++					max_exp_time = "100000"; // us 
++					step_exp_time = "1";
++					default_exp_time = "33330";
++
++					embedded_metadata_height = "0";
++				};
++/*
++				mode3 { // IMX412_MODE_4056x2288_60FPS 
++					mclk_khz = "37215";
++					num_lanes = "4";
++					tegra_sinterface = TEGRA_SINTERFACE;
++					
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++					dynamic_pixel_bit_depth = "10";
++					
++					csi_pixel_bit_depth = "10";
++					mode_type = "bayer";
++				        pixel_phase = "bggr";
++
++					active_w = "4056";
++					active_h = "2288";
++					readout_orientation = "0";
++					line_length = "4512";
++					inherent_gain = "1";
++					mclk_multiplier = "1";
++					pix_clk_hz = "748596480";
++
++					gain_factor = "100";
++					min_gain_val = "100";
++					max_gain_val = "2200"; 
++					step_gain_val = "1";
++					default_gain = "100";
++ 
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++
++					framerate_factor = "1000000";
++					min_framerate = "10000000";
++					max_framerate = "60000000";
++					step_framerate = "1";
++					default_framerate = "60000000";
++
++					exposure_factor = "1000000";
++					min_exp_time = "450"; // us
++					max_exp_time = "100000"; // us 
++					step_exp_time = "1";
++					default_exp_time = "16666";								
++					embedded_metadata_height = "0";
++				};
++				
++				mode4 { // IMX412_MODE_4056x2288_30FPS 
++					mclk_khz = "37215";
++					num_lanes = "4";
++					tegra_sinterface = TEGRA_SINTERFACE;
++					
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++					dynamic_pixel_bit_depth = "10";
++					
++					csi_pixel_bit_depth = "10";
++					mode_type = "bayer";
++				        pixel_phase = "bggr";
++
++					active_w = "4056";
++					active_h = "2288";
++					readout_orientation = "0";
++					line_length = "4512";
++					inherent_gain = "1";
++					mclk_multiplier = "1";
++					pix_clk_hz = "374298240";
++
++					gain_factor = "100";
++					min_gain_val = "100";
++					max_gain_val = "2200"; 
++					step_gain_val = "1";
++					default_gain = "100";
++ 
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++
++					framerate_factor = "1000000";
++					min_framerate = "10000000";
++					max_framerate = "30000000";
++					step_framerate = "1";
++					default_framerate = "30000000";
++	
++					exposure_factor = "1000000";
++					min_exp_time = "450"; // us
++					max_exp_time = "100000"; // us 
++					step_exp_time = "1";
++					default_exp_time = "33330";
++								
++					embedded_metadata_height = "0";
++				};
++*/				
++				mode2 { // IMX412_MODE_2028x1112_240FPS 
++					mclk_khz = "37215";
++					num_lanes = "4";
++					tegra_sinterface = TEGRA_SINTERFACE;
++					
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++					dynamic_pixel_bit_depth = "10";
++					
++					csi_pixel_bit_depth = "10";
++					mode_type = "bayer";
++				        pixel_phase = "bggr";
++
++					active_w = "2028";
++					active_h = "1112";
++					readout_orientation = "0";
++					line_length = "2976";
++					inherent_gain = "1";
++					mclk_multiplier = "1";
++					pix_clk_hz = "2994385920";
++
++					gain_factor = "100";
++					min_gain_val = "100";
++					max_gain_val = "2200"; 	
++					step_gain_val = "1";
++					default_gain = "100"; 
++
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++
++					framerate_factor = "1000000";
++					min_framerate = "10000000";
++					max_framerate = "240000000";
++					step_framerate = "1";
++					default_framerate = "240000000";
++
++					exposure_factor = "1000000";
++					min_exp_time = "450"; // us
++					max_exp_time = "100000"; // us 
++					step_exp_time = "1";
++					default_exp_time = "4144";											
++					embedded_metadata_height = "0";
++				};
++				
++				mode3 { // IMX412_MODE_2028x1112_60FPS 
++					mclk_khz = "37215";
++					num_lanes = "4";
++					tegra_sinterface = TEGRA_SINTERFACE;
++					
++					phy_mode = "DPHY";
++					discontinuous_clk = "no";
++					dpcm_enable = "false";
++					cil_settletime = "0";
++					dynamic_pixel_bit_depth = "10";
++					
++					csi_pixel_bit_depth = "10";
++					mode_type = "bayer";
++				        pixel_phase = "bggr";
++
++					active_w = "2028";
++					active_h = "1112";
++					readout_orientation = "0";
++					line_length = "2976";
++					inherent_gain = "1";
++					mclk_multiplier = "1";
++					pix_clk_hz = "748596480";
++
++					gain_factor = "100";
++					min_gain_val = "100";
++					max_gain_val = "2200"; // 10.66x 
++					step_gain_val = "1";
++					default_gain = "100"; // 1.00x 
++
++					min_hdr_ratio = "1";
++					max_hdr_ratio = "1";
++
++					framerate_factor = "1000000";
++					min_framerate = "10000000";
++					max_framerate = "60000000";
++					step_framerate = "1";
++					default_framerate = "60000000";
++					
++					exposure_factor = "1000000";
++					min_exp_time = "450"; // us
++					max_exp_time = "100000"; // us 
++					step_exp_time = "1";
++					default_exp_time = "16666";
++
++					embedded_metadata_height = "0";
++				};	
++
+diff --git a/hardware/nvidia/t23x/nv-public/overlay/tegra234-p3767-0000-p3768-0000-a0-4lane-imx412.dts b/hardware/nvidia/t23x/nv-public/overlay/tegra234-p3767-0000-p3768-0000-a0-4lane-imx412.dts
+new file mode 100644
+index 0000000..5e78344
+--- /dev/null
++++ b/hardware/nvidia/t23x/nv-public/overlay/tegra234-p3767-0000-p3768-0000-a0-4lane-imx412.dts
+@@ -0,0 +1,220 @@
++/*
++ * Copyright (c) 2022-2023, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++/dts-v1/;
++/plugin/;
++
++
++
++#define CAM0_PWDN	TEGRA234_MAIN_GPIO(H, 6)
++#define CAM1_PWDN	TEGRA234_MAIN_GPIO(AC, 0)
++#define CAM_I2C_MUX 	TEGRA234_AON_GPIO(CC, 3)
++
++#include <dt-bindings/clock/tegra234-clock.h>
++#include <dt-bindings/gpio/tegra234-gpio.h>
++#include <dt-bindings/tegra234-p3767-0000-common.h>
++
++
++/ {
++	overlay-name = "Jetson camera EIMX412 4lane";
++	jetson-header-name = "Jetson 24pin CSI Connector";
++	compatible = JETSON_COMPATIBLE_P3768;
++	fragment@0 {
++	target-path = "/";
++	__overlay__ {
++
++	bus@0 {
++	cam_i2cmux{
++		compatible = "i2c-mux-gpio";
++		status = "okay";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-parent = <&cam_i2c>;
++		mux-gpios = <&gpio_aon CAM_I2C_MUX GPIO_ACTIVE_HIGH>;
++		i2c@1 {
++                        reg = <1>;
++                        #address-cells = <1>;
++                        #size-cells = <0>;
++                        tca6424_22_b: tca6424@22 {
++                            compatible = "ti,tca6424";
++                            gpio-controller;
++			    #gpio-cells = <2>;
++                            reg = <0x22>;
++                            //vcc-supply = <&p3768_vdd_3v3_sys>;
++                            status = "okay";
++                            tca6424_22_outlow {
++                                /*
++                                  * GPIO-0  : RST_CAM1
++                                  * GPIO-4  : TRIGGER_CAM1
++                                  * GPIO-6  : PWDN_CAM1
++                                */
++                                 gpio-hog;
++                                 gpios = <0 0 1 0 2 0 3 0 4 0 5 0 6 0 7 1>;
++                                 output-low;
++                                 label = "tca6424_22_outlow_0",
++                                         "tca6424_22_outlow_1",
++                                         "tca6424_22_outlow_2",
++                                         "tca6424_22_outlow_3",
++                                         "tca6424_22_outlow_4",
++                                         "tca6424_22_outlow_5",
++                                         "tca6424_22_outlow_6",
++                                         "tca6424_22_outlow_7";
++                            };
++                            tca6424_22_outhigh {
++			            status = "disabled";
++			    };
++			    tca6424_22_input {
++			            status = "disabled";
++			    };
++			    
++			};
++                };
++        };
++
++        gpio@2200000 {
++                camera-control-output-low {
++                        gpio-hog;
++                        output-low;
++                        gpios = <CAM0_PWDN 0 CAM1_PWDN 0>;
++                        label = "cam0-pwdn","cam1-pwdn";
++                };
++        };
++};
++
++};
++};
++
++fragment@1 {
++		target-path = "/";
++		__overlay__ {
++		tegra-capture-vi {
++			num-channels = <1>;
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				eimx412_vi_port0: port@0 {
++					reg = <0>;
++					eimx412_vi_in0: endpoint {
++						port-index = <2>;
++						bus-width = <4>;
++						remote-endpoint = <&eimx412_csi_out0>;
++					};
++				};
++			};
++		};
++	
++	tcp: tegra-camera-platform {
++		compatible = "nvidia, tegra-camera-platform";
++		num_csi_lanes = <4>;
++		max_lane_speed = <1500000>;
++		min_bits_per_pixel = <16>;
++		vi_peak_byte_per_pixel = <2>;
++		vi_bw_margin_pct = <25>;
++		max_pixel_rate = <240000>;
++		isp_peak_byte_per_pixel = <5>;
++		isp_bw_margin_pct = <25>;
++		modules {
++			cam_module0: module0 {
++			 	status = "okay";
++				badge = "eimx412_front_0412";
++				position = "front";
++				orientation = "1";
++				cam_module0_drivernode0: drivernode0 {
++					pcl_id = "v4l2_sensor";
++					devname = "e-con_cam 9-0042";
++					sysfs-device-tree = "/sys/firmware/devicetree/base/bus@0/cam_i2cmux/i2c@1/eimx412_c@42";
++				};
++			};
++		};
++	};
++	
++	bus@0 {
++	host1x@13e00000{
++		nvcsi@15a00000 {
++			num-channels = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			csi_chan0: channel@0 {
++				reg = <0>;
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					csi_chan0_port0: port@0 {
++						reg = <0>;
++						eimx412_csi_in0: endpoint@0 {
++							port-index = <2>;
++							bus-width = <4>;
++							remote-endpoint = <&eimx412_eimx412_out0>;
++						};
++					};
++					csi_chan0_port1: port@1 {
++						reg = <1>;
++						eimx412_csi_out0: endpoint@1 {
++							remote-endpoint = <&eimx412_vi_in0>;
++						};
++					};
++				};
++			};
++		};
++	};
++
++	cam_i2cmux {
++		i2c_1: i2c@1 {
++			eimx412_cam1: eimx412_c@42 {
++				compatible = "nvidia,eimx412";
++				/* I2C device address */
++				reg = <0x42>;
++
++				/* V4L2 device node location */
++				devnode = "video0";
++				status = "okay";
++				/* Physical dimensions of sensor */
++				physical_w = "10.70";
++				physical_h = "8.50";
++				//set_mode_delay_ms = "1000";
++				sensor_model = "eimx412";
++				camera_mipi_lanes = "4";
++				camera-mipi-clk = <1200>;
++				//disable-framesync;
++				reset-gpios = <&tca6424_22_b 0 GPIO_ACTIVE_HIGH>;
++				boot-gpios  = <&tca6424_22_b 6 GPIO_ACTIVE_HIGH>;
++				use_sensor_mode_id = "true";  // Default use_sensor_mode_id is false
++
++#define TEGRA_SINTERFACE "serial_c"
++#include "eimx412_0000_4lane_modes.dtsi"
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					port@0 {
++						reg = <0>;
++						eimx412_eimx412_out0: endpoint {
++							status = "okay";
++							port-index = <2>;
++							bus-width = <4>;
++							remote-endpoint = <&eimx412_csi_in0>;
++						};
++					};
++				};
++			};
++		};
++	};
++
++};
++
++};
++};
++};

@@ -1,0 +1,92 @@
+=============================================
+ Running E-CON Installation Script 
+ DATE : Wed Apr 29 23:16:49 KST 2026         
+=============================================
+Running this script as root
+continue ......
+ Release Package Details :
+	Release Package Name is e-CAM121_CUONX_L4T36.4.4_JP6.2.1_JETSON-ONX-ONANO_R05.tar.gz
+	L4T Version is L4T36.4.4
+	Jetpack Version is JP6.2.1
+	Jetson Platforms: jetson-onx jetson-onano
+	Release Version is R05
+jetson-onx
+Machine architecture matched
+L4T Version matched 
+Jetson Platform matched jetson-onx
+Extracting release package
+Extracting device tree name and dtb block device to flash
+Jetson Orin nano or Jetson Orin NX
+Copying device-tree overlay file to /boot/ folder
+Checking md5sum for dtb file
+Device tree overlay updated successfully
+
+**** fdtdump is a low-level debugging tool, not meant for general use.
+**** If you want to decompile a dtb, you probably want
+****     dtc -I dtb -O dts <filename>
+
+Modified /boot/extlinux/extlinux.conf to add following DTBO entries: 
+/boot/tegra234-p3767-0000-p3768-0000-a0-4lane-imx412.dtbo
+Reboot system to reconfigure.
+Device Tree updated successfully
+extracting modules to rootfs
+Modules updated successfully
+Hit:1 http://ports.ubuntu.com/ubuntu-ports jammy InRelease
+Hit:2 http://ports.ubuntu.com/ubuntu-ports jammy-updates InRelease
+Hit:3 http://ports.ubuntu.com/ubuntu-ports jammy-backports InRelease
+Hit:4 http://ports.ubuntu.com/ubuntu-ports jammy-security InRelease
+Hit:5 https://deb.nodesource.com/node_20.x nodistro InRelease
+Hit:6 https://repo.download.nvidia.com/jetson/common r36.4 InRelease
+Hit:7 https://packages.microsoft.com/repos/code stable InRelease
+Hit:8 https://download.docker.com/linux/ubuntu jammy InRelease
+Hit:9 https://repo.download.nvidia.com/jetson/t234 r36.4 InRelease
+Hit:10 https://repo.download.nvidia.com/jetson/ffmpeg r36.4 InRelease
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+v4l-utils is already the newest version (1.22.1-2build1).
+0 upgraded, 0 newly installed, 0 to remove and 348 not upgraded.
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following packages will be upgraded:
+  nvidia-l4t-gstreamer
+1 upgraded, 0 newly installed, 0 to remove and 347 not upgraded.
+Need to get 1413 kB of archives.
+After this operation, 0 B of additional disk space will be used.
+Get:1 https://repo.download.nvidia.com/jetson/common r36.4/main arm64 nvidia-l4t-gstreamer arm64 36.4.7-20250918154033 [1413 kB]
+debconf: delaying package configuration, since apt-utils is not installed
+Fetched 1413 kB in 1s (1860 kB/s)
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 212303 files and directories currently installed.)
+Preparing to unpack .../nvidia-l4t-gstreamer_36.4.7-20250918154033_arm64.deb ...
+Unpacking nvidia-l4t-gstreamer (36.4.7-20250918154033) over (36.4.4-20250616085344) ...
+Setting up nvidia-l4t-gstreamer (36.4.7-20250918154033) ...
+Processing triggers for libc-bin (2.35-0ubuntu3.9) ...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+gir1.2-mutter-10 is already the newest version (42.9-0ubuntu9).
+gir1.2-mutter-10 set to manually installed.
+libmutter-10-0 is already the newest version (42.9-0ubuntu9).
+mutter-common is already the newest version (42.9-0ubuntu9).
+mutter-common set to manually installed.
+0 upgraded, 0 newly installed, 0 to remove and 347 not upgraded.
+
+WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+Reading package lists...
+Building dependency tree...
+Reading state information...
+0 upgraded, 0 newly installed, 0 to remove and 347 not upgraded.
+Installing eCAM_argus_camera Application Binary for ISP camera
+Updating misc files
+Copy ISP settings to rootfs /var/nvidia/nvcam/settings 
+permissions and ownerships as recommended by nvidia for isp_settings file
+Copy max-isp-vi-clks.sh script for isp camera
+copying updated /etc/modules file for e-con camera driver onboot load process
+copying nvidia's v4l2-compliance file
+Updated misc files successfully
+Sync 'ing : writing cached data to disk
+Going to reboot the device ....
+Rebooting the device .....
