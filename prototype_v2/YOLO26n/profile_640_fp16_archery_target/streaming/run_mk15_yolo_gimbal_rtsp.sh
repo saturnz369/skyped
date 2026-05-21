@@ -4,8 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROFILE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 RECORDINGS_DIR="${PROFILE_DIR}/recordings"
+source "${PROFILE_DIR}/skyped_profile_runtime.sh"
 
-export DISPLAY="${DISPLAY:-:1}"
+export DISPLAY="${DISPLAY:-$(skyped_detect_display)}"
 export SHOW="${SHOW:-1}"
 export RTSP_ENABLE="${RTSP_ENABLE:-1}"
 export RTSP_PORT="${RTSP_PORT:-8554}"

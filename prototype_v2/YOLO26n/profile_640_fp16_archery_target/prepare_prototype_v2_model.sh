@@ -4,7 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="${SCRIPT_DIR}"
 MODEL_DIR="${ROOT_DIR}/model"
-PYTHON_BIN="${PYTHON_BIN:-/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python}"
+source "${ROOT_DIR}/skyped_profile_runtime.sh"
+PYTHON_BIN="$(skyped_default_python_bin "${SKYPED_REPO_ROOT}/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python")"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 WEIGHTS="${WEIGHTS:-${MODEL_DIR}/best.pt}"

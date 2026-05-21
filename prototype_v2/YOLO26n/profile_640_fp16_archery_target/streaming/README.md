@@ -24,6 +24,12 @@ Use the recording README for deeper post-run extraction workflow:
 Current primary MK15 URL:
 
 ```text
+rtsp://<JETSON_ETH_IP>:8554/stream
+```
+
+Current field example URL:
+
+```text
 rtsp://192.168.144.100:8554/stream
 ```
 
@@ -104,6 +110,8 @@ Current network side:
 
 - Jetson Ethernet goes to the MK15 air unit network side
 - MK15 stream URL stays:
+  - `rtsp://<JETSON_ETH_IP>:8554/stream`
+- if this Jetson uses the old static address convention, that becomes:
   - `rtsp://192.168.144.100:8554/stream`
 
 ## Before Streaming
@@ -111,8 +119,13 @@ Current network side:
 This streaming folder assumes:
 
 - the model is already prepared
-- the engine already exists or can deserialize/build correctly
+- the local engine already exists or can deserialize/build correctly
 - the main profile binary is already built
+
+Machine-local launch note:
+
+- the launchers auto-load `~/skyped_host_runtime/env/jetson.env` when it exists
+- use that file for `DISPLAY`, `RTSP_HOST_IP`, `SERIAL_DEVICE`, `PYTHON_BIN`, and local runs/bin paths
 
 If you replace the model later:
 
@@ -135,7 +148,7 @@ bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/
 On MK15:
 
 1. Open `FPV`.
-2. Set `Camera A` to `rtsp://192.168.144.100:8554/stream`.
+2. Set `Camera A` to `rtsp://<JETSON_ETH_IP>:8554/stream`.
 3. Reopen the stream view.
 
 ## Launch 2: YOLO Overlay To MK15
@@ -152,7 +165,7 @@ Notes:
 - `TARGET_CLASS_ID=0` is the custom `target_face` class
 - no PX4 or gimbal is required
 - MK15 URL stays:
-  - `rtsp://192.168.144.100:8554/stream`
+  - `rtsp://<JETSON_ETH_IP>:8554/stream`
 
 If you want a higher stream bitrate for a run:
 
@@ -202,13 +215,14 @@ MK15 URL in this full mode:
 
 - `rtsp://192.168.144.100:8554/stream`
 
+If this Jetson intentionally overrides `RTSP_HOST_IP` in `~/skyped_host_runtime/env/jetson.env`, use that IP instead.
+
 ## Launch 3A: Full Explicit Real Application Launch
 
 This is the recommended explicit block for real application use when you want every important stream/control setting visible in one place.
 
 ```bash
 cd /home/saturnzzz/skyed
-export DISPLAY=:1
 export SHOW=1
 export RTSP_ENABLE=1
 export RTSP_PORT=8554
@@ -310,7 +324,7 @@ What this gives you:
 - MK15 RTSP stream
 - live PX4/SIYI control
 - health print
-- run bundle under `runs/<tag>/`
+- run bundle under `RUNS_ROOT/<tag>/`
 
 Normal meaning:
 
@@ -396,6 +410,15 @@ pkill -x csi_h264_rtsp_server
 2. Launch again from this README.
 3. Reopen `Camera A` in the FPV app with:
    - `rtsp://192.168.144.100:8554/stream`
+4. If this Jetson intentionally overrides `RTSP_HOST_IP` in `~/skyped_host_runtime/env/jetson.env`, use that IP instead.
+
+### Camera Open Fails Immediately
+
+If the camera is already owned by another process, the launcher can fail with:
+
+- `Device 0 (of 1) is in use`
+
+Stop the previous `nvarguscamerasrc`, DeepStream, or test process first, then launch again.
 
 This profile previously had a blank-screen problem because the full wrapper did not publish the right RTSP payloader path. The current fixed path is `/stream`.
 

@@ -40,6 +40,67 @@ The goal is:
 - send live MAVLink gimbal commands through PX4 to the SIYI gimbal
 - allow preview / RTSP / recording to lag or drop without dragging control with it
 
+## Repo And Machine-Local Runtime
+
+Shared in git:
+
+- code
+- launch scripts
+- shared configs
+- shared docs
+- shared model inputs:
+  - `model/best.pt`
+  - `model/target_face_v1_native_640.onnx`
+  - `model/labels.txt`
+
+Machine-local outside git:
+
+- DeepStream / CUDA / TensorRT install state
+- IMX412 driver / overlay install state
+- bridge or export Python venvs
+- compiled binaries
+- TensorRT engines
+- logs and run bundles
+- per-Jetson env file:
+  - `~/skyped_host_runtime/env/jetson.env`
+
+Launcher behavior:
+
+- profile launchers auto-load `~/skyped_host_runtime/env/jetson.env` when it exists
+- set `HOST_RUNTIME_ROOT` or `HOST_RUNTIME_ENV_FILE` if your local runtime tree lives elsewhere
+- you can still source the env file manually before launch if you prefer explicit control
+
+## Fresh Jetson Bring-Up
+
+Use this order on a new Jetson:
+
+1. Clone the repo:
+   - `git clone https://github.com/saturnz369/skyped.git ~/skyed`
+2. Install the external system stack:
+   - JetPack / L4T
+   - DeepStream
+   - CUDA / TensorRT
+3. Complete IMX412 bring-up:
+   - follow `vendor/e-CAM121_CUONX/e-CAM121_CUONX_driver_note.md`
+4. Create the machine-local runtime env:
+   - copy `~/skyed/jetson.env.example` to `~/skyped_host_runtime/env/jetson.env`
+   - set the actual `DISPLAY`, `XAUTHORITY` if needed, `RTSP_HOST_IP`, `SERIAL_DEVICE`, and `PYTHON_BIN`
+5. Build the local binaries:
+   - `make -C ~/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target clean all`
+6. Prepare the model inputs if needed:
+   - run `~/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/prepare_prototype_v2_model.sh` after replacing `model/best.pt`
+7. Let that Jetson use or rebuild its own local engine:
+   - `model/model_b1_gpu0_fp16.engine`
+8. Run the canonical launcher from this repo:
+   - local-only, stream-only, or full PX4/SIYI path from the sections below
+
+Update flow on an already-prepared Jetson:
+
+1. `git pull`
+2. rebuild local binaries if code changed
+3. regenerate the local engine if the model or TensorRT compatibility changed
+4. keep the same machine-local `~/skyped_host_runtime/env/jetson.env`
+
 ## Current Verified State
 
 This is the current known-good state of the profile:
@@ -48,7 +109,9 @@ This is the current known-good state of the profile:
 - current working camera path is `CAM1`
 - current application default is `2028x1112 @ 60`
 - YOLO inference stays `640x640`
-- current full MK15 URL is:
+- current MK15 RTSP path is:
+  - `rtsp://<JETSON_ETH_IP>:8554/stream`
+- current field example URL is:
   - `rtsp://192.168.144.100:8554/stream`
 - current full-control launcher works again with:
   - IMX412
@@ -58,7 +121,9 @@ This is the current known-good state of the profile:
 - the control path is latest-only and binary shared-memory based
 - stale metadata is age-gated in the Python bridge
 - monitoring branch errors are disposable by default
-- run artifacts are bundled automatically under `runs/<tag>/`
+- run artifacts are bundled automatically under `RUNS_ROOT/<tag>/`
+  - default is repo-local `runs/<tag>/`
+  - set `HOST_RUNTIME_RUNS_ROOT` or `RUNS_ROOT` if you want them outside git
 - health printing / health log / latency summary are integrated
 - Level 1 target memory is integrated in the Python bridge:
   - when visual target is lost briefly, hold/coast on the last trusted gimbal angle
@@ -69,8 +134,11 @@ Current active runtime files:
 
 - `model/best.pt`
 - `model/target_face_v1_native_640.onnx`
-- `model/model_b1_gpu0_fp16.engine`
 - `model/labels.txt`
+
+Current machine-local runtime artifact:
+
+- `model/model_b1_gpu0_fp16.engine`
 
 Important note:
 
@@ -97,7 +165,8 @@ Current main stack:
 - vendored DeepStream-Yolo parser:
   - `/home/saturnzzz/skyed/third_party/DeepStream-Yolo/nvdsinfer_custom_impl_Yolo/libnvdsinfer_custom_impl_Yolo.so`
 - Python runtime for model export and bridge:
-  - `/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python`
+  - usually set with `PYTHON_BIN`
+  - current repo-local fallback is `/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python`
 - normal MAVLink serial device:
   - `/dev/ttyUSB0`
 - normal USB-UART converter identity:
@@ -149,9 +218,10 @@ Current practical wiring detail:
     - do not reuse that port for the Jetson bridge or the SIYI gimbal
 - Jetson Ethernet -> MK15:
   - Jetson Ethernet goes to the MK15 air unit network side
-  - current full stream URL is `rtsp://192.168.144.100:8554/stream`
+  - current stream URL pattern is `rtsp://<JETSON_ETH_IP>:8554/stream`
+  - current field example URL is `rtsp://192.168.144.100:8554/stream`
 - local Jetson operator view:
-  - optional local preview comes from the display session, usually `DISPLAY=:1`
+  - optional local preview comes from the active desktop display session
 
 Current PX4 serial map summary:
 
@@ -250,7 +320,15 @@ Current working convention:
 - Jetson internet/Codex link stays on Wi-Fi
 - Jetson Ethernet `enP8p1s0` goes to the MK15 air unit LAN side
 - the Jetson RTSP address exposed to MK15 is:
+  - `rtsp://<JETSON_ETH_IP>:8554/stream`
+- if this Jetson uses the old static address convention, that becomes:
   - `rtsp://192.168.144.100:8554/stream`
+
+Always check the actual Ethernet IP before typing the MK15 URL:
+
+```bash
+ip -br addr show enP8p1s0
+```
 
 If the MK15 Ethernet profile is not already created on this Jetson, use:
 
@@ -279,8 +357,10 @@ Expected Jetson Ethernet address:
 On the MK15 handheld:
 
 1. Open the `FPV` app.
-2. Set `Camera A` to `rtsp://192.168.144.100:8554/stream`.
-3. Reopen the stream view after the Jetson launcher is running.
+2. Set `Camera A` to the canonical MK15 URL:
+   - `rtsp://192.168.144.100:8554/stream`
+3. If this Jetson intentionally overrides `RTSP_HOST_IP` in `~/skyped_host_runtime/env/jetson.env`, use that IP instead.
+4. Reopen the stream view after the Jetson launcher is running.
 
 Practical meaning:
 
@@ -293,8 +373,9 @@ The optional local preview window is separate from the MK15 stream.
 
 Current working convention:
 
-- local preview usually comes from the desktop display session at `DISPLAY=:1`
-- preview-enabled launch blocks in this profile already export `DISPLAY=:1`
+- local preview uses the active Jetson desktop session
+- that can be `DISPLAY=:0` on one Jetson and `DISPLAY=:1` on another
+- the launchers now honor the current `DISPLAY` or load it from `~/skyped_host_runtime/env/jetson.env`
 - if you do not want the local preview window, use `SHOW=0`
 
 Practical note:
@@ -665,7 +746,6 @@ and removes any old engine so the next run rebuilds or reloads cleanly.
 Use this for first visual validation:
 
 ```bash
-export DISPLAY=:1
 export SHOW=1
 export RTSP_ENABLE=0
 export SENSOR_ID=0
@@ -705,7 +785,6 @@ bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/
 Use this when PX4/SIYI is connected and you want local preview but not MK15 RTSP:
 
 ```bash
-export DISPLAY=:1
 export SHOW=1
 export RTSP_ENABLE=0
 export SENSOR_ID=0
@@ -821,6 +900,8 @@ MK15 URL:
 rtsp://192.168.144.100:8554/stream
 ```
 
+If this Jetson intentionally overrides `RTSP_HOST_IP` in `~/skyped_host_runtime/env/jetson.env`, use that IP instead.
+
 ### 7. Real Full Control With Clean Dataset Recording
 
 Use the dedicated recording operator note instead of duplicating the record-enabled launch here:
@@ -839,8 +920,11 @@ Active runtime model files:
 
 - `model/best.pt`
 - `model/target_face_v1_native_640.onnx`
-- `model/model_b1_gpu0_fp16.engine`
 - `model/labels.txt`
+
+Machine-local build artifact:
+
+- `model/model_b1_gpu0_fp16.engine`
 
 Training archives:
 
@@ -853,7 +937,7 @@ Normal rule:
 
 - copy the accepted weight into `model/best.pt`
 - run `prepare_prototype_v2_model.sh`
-- rebuild or reload the engine
+- rebuild or reload the local engine on that Jetson
 - test under the same runtime settings as the previous model
 
 ### Fast First-Pass Engine Build
@@ -883,13 +967,13 @@ By default:
 Each launcher creates:
 
 ```text
-runs/<tag>/
+RUNS_ROOT/<tag>/
 ```
 
 and refreshes:
 
 ```text
-runs/latest/
+RUNS_ROOT/latest/
 ```
 
 Typical files inside one run:
@@ -906,6 +990,18 @@ Current helper tools prefer `runs/latest/` automatically:
 - `tools/extract_latest_failure_frames.sh`
 - `tools/bridge_latency_report.py`
 - `tools/bridge_failure_report.py`
+
+Practical note:
+
+- if `HOST_RUNTIME_RUNS_ROOT` is set in `~/skyped_host_runtime/env/jetson.env`, that external path becomes `RUNS_ROOT`
+- on this Jetson, the verified run bundle path is under:
+  - `/home/saturnzzz/skyped_host_runtime/runs/profile_640_fp16_archery_target/`
+
+If your run bundle has no detector rows, the helper reports can stop with:
+
+- `No JSON rows found`
+
+That usually means the main run never produced bridge metadata for that attempt, or you pointed the helper at the wrong `RUNS_ROOT/latest` bundle.
 
 If you intentionally want the old loose-file behavior:
 
@@ -934,19 +1030,22 @@ That means the recording is valid dataset material and does not include:
 ### Latency Summary
 
 ```bash
+source ~/skyped_host_runtime/env/jetson.env
 python3 /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/bridge_latency_report.py
 ```
 
 ### Failure Summary
 
 ```bash
+source ~/skyped_host_runtime/env/jetson.env
 python3 /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/bridge_failure_report.py
 ```
 
 ### Detector-Miss Fallback On The Recorded Video
 
 ```bash
-/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/extract_detector_miss_frames_from_video.py --video /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/runs/latest/recording_clean.mkv --weights /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/model/best.pt --class-id 0 --conf 0.10 --imgsz 640 --min-miss-frames 6 --max-miss-frames 600 --frames-per-segment 4 --progress-every 300 --device cpu
+source ~/skyped_host_runtime/env/jetson.env
+"${PYTHON_BIN:-/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python}" /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/extract_detector_miss_frames_from_video.py --video "${RUNS_ROOT:-/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/runs}/latest/recording_clean.mkv" --weights /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/model/best.pt --class-id 0 --conf 0.10 --imgsz 640 --min-miss-frames 6 --max-miss-frames 600 --frames-per-segment 4 --progress-every 300 --device cpu
 ```
 
 ## Runtime Architecture

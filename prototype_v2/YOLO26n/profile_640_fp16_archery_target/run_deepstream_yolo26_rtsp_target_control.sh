@@ -3,7 +3,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="${SCRIPT_DIR}"
-BIN_PATH="${ROOT_DIR}/deepstream_yolo26_rtsp_target_control"
+source "${ROOT_DIR}/skyped_profile_runtime.sh"
+
+REPO_BIN_PATH="${ROOT_DIR}/deepstream_yolo26_rtsp_target_control"
+BIN_PATH="${DEEPSTREAM_CONTROL_BIN:-$(skyped_profile_binary_path "deepstream_yolo26_rtsp_target_control" "${REPO_BIN_PATH}")}"
 
 export SENSOR_ID="${SENSOR_ID:-0}"
 export CAMERA_WIDTH="${CAMERA_WIDTH:-2028}"
@@ -46,13 +49,21 @@ export STATE_FILE="${STATE_FILE:-}"
 export STATE_FILE_FLUSH="${STATE_FILE_FLUSH:-0}"
 export RTSP_ENABLE="${RTSP_ENABLE:-1}"
 export RTSP_PORT="${RTSP_PORT:-8554}"
+export RTSP_MOUNT="${RTSP_MOUNT:-/stream}"
 export UDP_PORT="${UDP_PORT:-5400}"
 export BITRATE="${BITRATE:-8000000}"
 export VIDEO_QUEUE_BUFFERS="${VIDEO_QUEUE_BUFFERS:-2}"
+if [[ "${SHOW}" == "1" && -z "${DISPLAY:-}" ]]; then
+  export DISPLAY="$(skyped_detect_display)"
+fi
 
 if [[ ! -x "${BIN_PATH}" ]]; then
+  if [[ "${BIN_PATH}" != "${REPO_BIN_PATH}" ]]; then
+    echo "Configured DeepStream binary is not executable: ${BIN_PATH}" >&2
+    exit 1
+  fi
   make -C "${ROOT_DIR}"
 fi
 
-cd "${ROOT_DIR}/model"
-"${BIN_PATH}"
+cd "${ROOT_DIR}"
+exec "${BIN_PATH}"

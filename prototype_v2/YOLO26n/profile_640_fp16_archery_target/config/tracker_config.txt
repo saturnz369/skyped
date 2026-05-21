@@ -3,5 +3,5 @@ tracker-width=960
 tracker-height=544
 gpu-id=0
 ll-lib-file=/opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
-ll-config-file=/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/config/config_tracker_NvDCF_perf.yml
+ll-config-file=config/config_tracker_NvDCF_perf.yml
 display-tracking-id=1

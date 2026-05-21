@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+source "${SCRIPT_DIR}/skyped_profile_runtime.sh"
 export PYTHONPATH="${REPO_ROOT}:${PYTHONPATH:-}"
 INFER_CONFIG="${INFER_CONFIG:-${SCRIPT_DIR}/config/config_infer_primary_yolo26.txt}"
 TRACKER_CONFIG="${TRACKER_CONFIG:-${SCRIPT_DIR}/config/tracker_config.txt}"
@@ -21,7 +22,7 @@ infer_cfg_value() {
     grep -m1 "^${key}=" "${path}" 2>/dev/null | cut -d'=' -f2-
 }
 
-PYTHON_BIN="${PYTHON_BIN:-/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python}"
+PYTHON_BIN="$(skyped_default_python_bin "${REPO_ROOT}/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python")"
 if [[ ! -x "${PYTHON_BIN}" ]]; then
     PYTHON_BIN="python3"
 fi
@@ -147,11 +148,15 @@ HEALTH_PRINT_INTERVAL_SEC="${HEALTH_PRINT_INTERVAL_SEC:-1.0}"
 HEALTH_STATE_FILE="${HEALTH_STATE_FILE:-}"
 HEALTH_TEMP_ZONE="${HEALTH_TEMP_ZONE:-tj-thermal}"
 RUN_ARTIFACTS_ENABLE="${RUN_ARTIFACTS_ENABLE:-1}"
-RUNS_ROOT="${RUNS_ROOT:-${SCRIPT_DIR}/runs}"
+RUNS_ROOT="${RUNS_ROOT:-${HOST_RUNTIME_RUNS_ROOT:-${SCRIPT_DIR}/runs}}"
 RUN_TAG="${RUN_TAG:-$(date +%Y%m%d-%H%M%S)}"
 RUN_DIR=""
 CONFIG_USED_FILE=""
 PERFORMANCE_SUMMARY_FILE=""
+
+if [[ "${SHOW}" == "1" && -z "${DISPLAY:-}" ]]; then
+    export DISPLAY="$(skyped_detect_display)"
+fi
 
 if [[ "${RUN_ARTIFACTS_ENABLE}" == "1" ]]; then
     RUN_DIR="${RUNS_ROOT}/${RUN_TAG}"

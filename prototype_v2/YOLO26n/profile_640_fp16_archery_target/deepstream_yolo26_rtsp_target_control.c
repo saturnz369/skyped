@@ -598,7 +598,7 @@ load_config(AppConfig *cfg)
   cfg->raw_record_queue_buffers = env_int_default("RAW_RECORD_QUEUE_BUFFERS", DEFAULT_RAW_RECORD_QUEUE_BUFFERS);
   cfg->rtsp_viewer_latency_ms = env_int_default("RTSP_VIEWER_LATENCY_MS", DEFAULT_RTSP_VIEWER_LATENCY_MS);
   cfg->monitoring_errors_fatal = env_bool_default("MONITORING_ERRORS_FATAL", FALSE);
-  cfg->rtsp_mount = env_strdup_default("RTSP_MOUNT", "/ds-test");
+  cfg->rtsp_mount = env_strdup_default("RTSP_MOUNT", "/stream");
   cfg->raw_record_file = env_strdup_raw("RAW_RECORD_FILE");
   if (cfg->rtsp_mount[0] != '/') {
     gchar *fixed_mount = g_strdup_printf("/%s", cfg->rtsp_mount);
@@ -607,10 +607,10 @@ load_config(AppConfig *cfg)
   }
   cfg->infer_config = env_strdup_default(
       "INFER_CONFIG",
-      "/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/config/config_infer_primary_yolo26.txt");
+      "config/config_infer_primary_yolo26.txt");
   cfg->tracker_config = env_strdup_default(
       "TRACKER_CONFIG",
-      "/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/config/tracker_config.txt");
+      "config/tracker_config.txt");
   cfg->metadata_ipc_file = env_strdup_raw("METADATA_IPC_FILE");
   cfg->state_file = env_strdup_raw("STATE_FILE");
   cfg->state_file_flush = env_bool_default("STATE_FILE_FLUSH", FALSE);

@@ -4,12 +4,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="${SCRIPT_DIR}"
 SERVER_SCRIPT="${ROOT_DIR}/run_deepstream_yolo26_rtsp_target_control.sh"
+source "${ROOT_DIR}/skyped_profile_runtime.sh"
 
 export RTSP_PORT="${RTSP_PORT:-8554}"
-export RTSP_URL="${RTSP_URL:-rtsp://127.0.0.1:${RTSP_PORT}/ds-test}"
+export RTSP_URL="${RTSP_URL:-rtsp://127.0.0.1:${RTSP_PORT}/stream}"
 export PREVIEW_WAIT_SECONDS="${PREVIEW_WAIT_SECONDS:-15}"
 export RTSP_VIEWER_LATENCY_MS="${RTSP_VIEWER_LATENCY_MS:-80}"
 export RTSP_PROTOCOLS="${RTSP_PROTOCOLS:-udp}"
+if [[ -z "${DISPLAY:-}" ]]; then
+  export DISPLAY="$(skyped_detect_display)"
+fi
 
 server_pid=""
 

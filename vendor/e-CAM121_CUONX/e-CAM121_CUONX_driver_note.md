@@ -349,7 +349,7 @@ Do not expect `sensor-id=1` to work unless a second camera is connected. With on
 Preview stream:
 
 ```bash
-DISPLAY=:1 gst-launch-1.0 -e nvarguscamerasrc sensor-id=0 ! 'video/x-raw(memory:NVMM),width=2028,height=1112,framerate=60/1' ! nvvidconv ! 'video/x-raw,width=1280,height=720,format=I420' ! xvimagesink sync=false
+DISPLAY="${DISPLAY:-:0}" gst-launch-1.0 -e nvarguscamerasrc sensor-id=0 ! 'video/x-raw(memory:NVMM),width=2028,height=1112,framerate=60/1' ! nvvidconv ! 'video/x-raw,width=1280,height=720,format=I420' ! xvimagesink sync=false
 ```
 
 Expected:

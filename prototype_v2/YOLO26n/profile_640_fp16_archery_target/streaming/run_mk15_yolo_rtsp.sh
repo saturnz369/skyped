@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROFILE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+source "${PROFILE_DIR}/skyped_profile_runtime.sh"
 
 export SHOW="${SHOW:-0}"
 export RTSP_ENABLE="${RTSP_ENABLE:-1}"
@@ -16,5 +17,8 @@ export CAMERA_FPS_D="${CAMERA_FPS_D:-1}"
 export TARGET_CLASS_ID="${TARGET_CLASS_ID:-0}"
 export SELECTION="${SELECTION:-center}"
 export MAX_FRAMES="${MAX_FRAMES:-0}"
+if [[ "${SHOW}" == "1" && -z "${DISPLAY:-}" ]]; then
+  export DISPLAY="$(skyped_detect_display)"
+fi
 
 exec bash "${PROFILE_DIR}/run_deepstream_yolo26_rtsp_target_control.sh"

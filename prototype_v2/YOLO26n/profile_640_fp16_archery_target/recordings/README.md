@@ -23,10 +23,14 @@ This is the same real MK15 + gimbal application as the normal stream/operator pa
 
 It still uses one terminal for the main run.
 
+Machine-local launch note:
+
+- the launchers auto-load `~/skyped_host_runtime/env/jetson.env` when it exists
+- use that file for `DISPLAY`, `SERIAL_DEVICE`, `PYTHON_BIN`, and optional `HOST_RUNTIME_RUNS_ROOT`
+
 ```bash
 cd /home/saturnzzz/skyed
 export RAW_RECORD_ENABLE=1
-export DISPLAY=:1
 export SHOW=1
 export RTSP_ENABLE=1
 export RTSP_PORT=8554
@@ -125,29 +129,29 @@ What this means:
 By default the launcher creates a run bundle here:
 
 ```text
-runs/YYYYMMDD-HHMMSS/
+RUNS_ROOT/YYYYMMDD-HHMMSS/
 ```
 
 and refreshes:
 
 ```text
-runs/latest/
+RUNS_ROOT/latest/
 ```
 
 The clean raw recording is normally:
 
 ```text
-runs/YYYYMMDD-HHMMSS/recording_clean.mkv
+RUNS_ROOT/YYYYMMDD-HHMMSS/recording_clean.mkv
 ```
 
 with matching:
 
 ```text
-runs/YYYYMMDD-HHMMSS/config_used.yaml
-runs/YYYYMMDD-HHMMSS/detection_log.jsonl
-runs/YYYYMMDD-HHMMSS/health_log.jsonl
-runs/YYYYMMDD-HHMMSS/deepstream.log
-runs/YYYYMMDD-HHMMSS/performance_summary.txt
+RUNS_ROOT/YYYYMMDD-HHMMSS/config_used.yaml
+RUNS_ROOT/YYYYMMDD-HHMMSS/detection_log.jsonl
+RUNS_ROOT/YYYYMMDD-HHMMSS/health_log.jsonl
+RUNS_ROOT/YYYYMMDD-HHMMSS/deepstream.log
+RUNS_ROOT/YYYYMMDD-HHMMSS/performance_summary.txt
 ```
 
 Stop the run with `Ctrl+C`.
@@ -163,8 +167,8 @@ bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/
 The extractor creates:
 
 ```text
-runs/YYYYMMDD-HHMMSS/recording_clean_failure_frames/
-runs/YYYYMMDD-HHMMSS/recording_clean_failure_frames.zip
+RUNS_ROOT/YYYYMMDD-HHMMSS/recording_clean_failure_frames/
+RUNS_ROOT/YYYYMMDD-HHMMSS/recording_clean_failure_frames.zip
 ```
 
 Use the `.zip` for labeling on the PC.
@@ -176,11 +180,12 @@ If the live bridge-based extractor is not available for that run, use the detect
 Recommended on Jetson: keep it on CPU.
 
 ```bash
+source ~/skyped_host_runtime/env/jetson.env
 cd /home/saturnzzz/skyed
 
-/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python \
+"${PYTHON_BIN:-/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python}" \
 /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/extract_detector_miss_frames_from_video.py \
---video /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/runs/latest/recording_clean.mkv \
+--video "${RUNS_ROOT:-/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/runs}/latest/recording_clean.mkv" \
 --weights /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/model/best.pt \
 --class-id 0 \
 --conf 0.10 \
@@ -195,8 +200,8 @@ cd /home/saturnzzz/skyed
 This fallback creates:
 
 ```text
-runs/YYYYMMDD-HHMMSS/recording_clean_detector_miss_frames/
-runs/YYYYMMDD-HHMMSS/recording_clean_detector_miss_frames.zip
+RUNS_ROOT/YYYYMMDD-HHMMSS/recording_clean_detector_miss_frames/
+RUNS_ROOT/YYYYMMDD-HHMMSS/recording_clean_detector_miss_frames.zip
 ```
 
 Keep:

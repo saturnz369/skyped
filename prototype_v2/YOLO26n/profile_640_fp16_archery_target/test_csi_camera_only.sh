@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/skyped_profile_runtime.sh"
+
 SENSOR_ID="${SENSOR_ID:-0}"
 CAMERA_WIDTH="${CAMERA_WIDTH:-2028}"
 CAMERA_HEIGHT="${CAMERA_HEIGHT:-1112}"
