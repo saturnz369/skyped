@@ -44,6 +44,7 @@ CAMERA_HEIGHT="${CAMERA_HEIGHT:-1112}"
 CAMERA_FPS_N="${CAMERA_FPS_N:-60}"
 CAMERA_FPS_D="${CAMERA_FPS_D:-1}"
 METADATA_MAX_AGE_MS="${METADATA_MAX_AGE_MS:-150}"
+MONITORING_ERRORS_FATAL="${MONITORING_ERRORS_FATAL:-0}"
 SHOW="${SHOW:-0}"
 PRINT_FRAME_LOGS="${PRINT_FRAME_LOGS:-0}"
 TARGET_CLASS_ID="${TARGET_CLASS_ID:-0}"
@@ -143,7 +144,7 @@ DRY_RUN_MAVLINK="${DRY_RUN_MAVLINK:-0}"
 CONTROL_API="${CONTROL_API:-command}"
 PRINT_STATE="${PRINT_STATE:-0}"
 BRIDGE_STATE_FILE="${BRIDGE_STATE_FILE:-}"
-PRINT_HEALTH="${PRINT_HEALTH:-0}"
+PRINT_HEALTH="${PRINT_HEALTH:-1}"
 HEALTH_PRINT_INTERVAL_SEC="${HEALTH_PRINT_INTERVAL_SEC:-1.0}"
 HEALTH_STATE_FILE="${HEALTH_STATE_FILE:-}"
 HEALTH_TEMP_ZONE="${HEALTH_TEMP_ZONE:-tj-thermal}"
@@ -441,6 +442,7 @@ export RTSP_QUEUE_BUFFERS
 export RAW_RECORD_QUEUE_BUFFERS
 export MAX_FRAMES
 export STATE_FILE_FLUSH
+export MONITORING_ERRORS_FATAL
 export PRINT_HEALTH
 export HEALTH_PRINT_INTERVAL_SEC
 export HEALTH_STATE_FILE
@@ -449,28 +451,66 @@ export RUN_ARTIFACTS_ENABLE
 export RUNS_ROOT
 export RUN_TAG
 
+RUN_RC=0
+RUN_CHILD_PID=""
+RUN_SUMMARY_WRITTEN=0
+
+write_performance_summary() {
+    local summary_rc="${1:-${RUN_RC:-0}}"
+    if [[ "${RUN_SUMMARY_WRITTEN}" == "1" ]]; then
+        return 0
+    fi
+    RUN_SUMMARY_WRITTEN=1
+    if [[ "${RUN_ARTIFACTS_ENABLE}" == "1" && -n "${PERFORMANCE_SUMMARY_FILE}" ]]; then
+        {
+            echo "run_dir=${RUN_DIR}"
+            echo "run_exit_code=${summary_rc}"
+            echo "bridge_state_file=${BRIDGE_STATE_FILE}"
+            echo "health_state_file=${HEALTH_STATE_FILE}"
+            echo "deepstream_log_file=${DEEPSTREAM_LOG_FILE}"
+            [[ -n "${RAW_RECORD_FILE}" ]] && echo "raw_record_file=${RAW_RECORD_FILE}"
+            echo
+            if [[ -n "${BRIDGE_STATE_FILE}" && -f "${BRIDGE_STATE_FILE}" ]]; then
+                python3 "${SCRIPT_DIR}/tools/bridge_latency_report.py" --bridge-log "${BRIDGE_STATE_FILE}" || true
+            else
+                echo "bridge_latency_report: bridge log not found"
+            fi
+        } > "${PERFORMANCE_SUMMARY_FILE}"
+    fi
+}
+
+handle_run_signal() {
+    local signal_name="$1"
+    local signal_rc="$2"
+    if [[ -n "${RUN_CHILD_PID}" ]] && kill -0 "${RUN_CHILD_PID}" 2>/dev/null; then
+        kill "-${signal_name}" "${RUN_CHILD_PID}" 2>/dev/null || true
+        wait "${RUN_CHILD_PID}" 2>/dev/null || true
+    fi
+    RUN_RC="${signal_rc}"
+    exit "${RUN_RC}"
+}
+
+finalize_run() {
+    local exit_rc=$?
+    if [[ "${RUN_RC}" -eq 0 && "${exit_rc}" -ne 0 ]]; then
+        RUN_RC="${exit_rc}"
+    fi
+    write_performance_summary "${RUN_RC}"
+}
+
+trap finalize_run EXIT
+trap 'handle_run_signal INT 130' INT
+trap 'handle_run_signal HUP 129' HUP
+trap 'handle_run_signal TERM 143' TERM
+
 cd "${REPO_ROOT}"
-if "${CMD[@]}" "$@"; then
+"${CMD[@]}" "$@" &
+RUN_CHILD_PID=$!
+if wait "${RUN_CHILD_PID}"; then
     RUN_RC=0
 else
     RUN_RC=$?
 fi
-
-if [[ "${RUN_ARTIFACTS_ENABLE}" == "1" && -n "${PERFORMANCE_SUMMARY_FILE}" ]]; then
-    {
-        echo "run_dir=${RUN_DIR}"
-        echo "run_exit_code=${RUN_RC}"
-        echo "bridge_state_file=${BRIDGE_STATE_FILE}"
-        echo "health_state_file=${HEALTH_STATE_FILE}"
-        echo "deepstream_log_file=${DEEPSTREAM_LOG_FILE}"
-        [[ -n "${RAW_RECORD_FILE}" ]] && echo "raw_record_file=${RAW_RECORD_FILE}"
-        echo
-        if [[ -n "${BRIDGE_STATE_FILE}" && -f "${BRIDGE_STATE_FILE}" ]]; then
-            python3 "${SCRIPT_DIR}/tools/bridge_latency_report.py" --bridge-log "${BRIDGE_STATE_FILE}" || true
-        else
-            echo "bridge_latency_report: bridge log not found"
-        fi
-    } > "${PERFORMANCE_SUMMARY_FILE}"
-fi
+RUN_CHILD_PID=""
 
 exit "${RUN_RC}"

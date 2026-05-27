@@ -12,7 +12,7 @@ runs/
 *.o
 deepstream_yolo26_rtsp_target_control
 csi_h264_rtsp_server
-prototype_v2/YOLO26n/profile_640_fp16_archery_target/model/*.engine
+prototype_v2/YOLO26*/profile_640_fp16_archery_target/model/*.engine
 
 # Local virtual environments and machine-specific Python runtimes
 .venv/

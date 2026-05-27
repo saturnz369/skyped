@@ -4,6 +4,12 @@ This is the main real `prototype_v2` profile for the custom single-class `target
 
 - `/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target`
 
+Portable path rule:
+
+- runtime scripts resolve their own paths relative to the checked-out repo
+- the README command blocks use `/home/saturnzzz/skyed` as the reference clone path on this Jetson
+- on another Jetson, either clone to `~/skyed` as the standard path, or replace that prefix with the local repo root before running the command
+
 This README is the source-of-truth overview for:
 
 - hardware setup
@@ -143,6 +149,7 @@ Current machine-local runtime artifact:
 Important note:
 
 - the current accepted weight in `model/best.pt` is the active runtime model
+- the current promoted runtime weight is `training_weight/v3/best.pt`
 - `target_face_v1_native_640.onnx` is still the current ONNX filename for compatibility
 - do not assume the `v1` string in that ONNX filename means the active model is still training `v1`
 
@@ -150,6 +157,7 @@ Training archives are preserved separately:
 
 - `training_weight/v1/`
 - `training_weight/v2/`
+- `training_weight/v3/`
 
 ## Hardware And Runtime Stack
 
@@ -279,6 +287,7 @@ Practical meaning:
 - telemetry can be visible in QGC without necessarily moving the gimbal
 - gimbal motion only started working once the SIYI-side attitude-enable flag was set on component `154`
 - when control is healthy, the Jetson bridge talks to PX4 on `TELEM2`, and PX4 forwards the gimbal-manager commands to `TELEM3`
+- if `MAVLINK: OK` but `GIMBAL: BAD` and the SIYI does not move, check the physical `TELEM3` / SIYI serial connector first
 - do not reuse `TELEM1` for the Jetson bridge or SIYI gimbal
 
 If serial or USB naming changes after reconnecting hardware, check:
@@ -904,7 +913,14 @@ If this Jetson intentionally overrides `RTSP_HOST_IP` in `~/skyped_host_runtime/
 
 ### 7. Real Full Control With Clean Dataset Recording
 
-Use the dedicated recording operator note instead of duplicating the record-enabled launch here:
+One-shot recording launcher:
+
+```bash
+bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/run_mk15_yolo_gimbal_rtsp_record.sh
+```
+
+That wrapper keeps the normal full-control defaults, but forces `RAW_RECORD_ENABLE=1`.
+Use the dedicated recording operator note for the rest of the recording workflow:
 
 - [recordings/README.md](/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/README.md)
 
@@ -932,6 +948,8 @@ Training archives:
 - `training_weight/v1/best.onnx`
 - `training_weight/v2/best.pt`
 - `training_weight/v2/best.onnx`
+- `training_weight/v3/best.pt`
+- `training_weight/v3/best.onnx`
 
 Normal rule:
 
@@ -939,6 +957,28 @@ Normal rule:
 - run `prepare_prototype_v2_model.sh`
 - rebuild or reload the local engine on that Jetson
 - test under the same runtime settings as the previous model
+
+Current repo state:
+
+- `model/best.pt` is now aligned to `training_weight/v3/best.pt`
+- `model/target_face_v1_native_640.onnx` is the ONNX exported from that `v3` weight
+- the engine filename stays `model/model_b1_gpu0_fp16.engine` for runtime compatibility
+
+### Promote `training_weight/v3` To Active Runtime Model
+
+Use this when `training_weight/v3/best.pt` is the next accepted weight:
+
+```bash
+cp /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/training_weight/v3/best.pt /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/model/best.pt
+bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/prepare_prototype_v2_model.sh
+```
+
+That step exports a fresh:
+
+- `model/target_face_v1_native_640.onnx`
+
+and removes the old local engine so the next DeepStream run or manual `trtexec` build uses the new model.
+It keeps the compatibility runtime ONNX at `model/target_face_v1_native_640.onnx`; do not track a temporary `model/best.onnx`.
 
 ### Fast First-Pass Engine Build
 
@@ -985,6 +1025,8 @@ Typical files inside one run:
 - `performance_summary.txt`
 - `recording_clean.mkv` when `RAW_RECORD_ENABLE=1`
 
+Use `performance_summary.txt` for run-to-run comparison. It is the run-level aggregate for FPS, latency, metadata age, dropped frames, and carried timestamps. The live `CAMERA: ... | YOLO: ... | CONTROL: ...` health line is for operator monitoring only; it is a snapshot, not the summary.
+
 Current helper tools prefer `runs/latest/` automatically:
 
 - `tools/extract_latest_failure_frames.sh`
@@ -995,7 +1037,7 @@ Practical note:
 
 - if `HOST_RUNTIME_RUNS_ROOT` is set in `~/skyped_host_runtime/env/jetson.env`, that external path becomes `RUNS_ROOT`
 - on this Jetson, the verified run bundle path is under:
-  - `/home/saturnzzz/skyped_host_runtime/runs/profile_640_fp16_archery_target/`
+  - `/home/saturnzzz/skyped_host_runtime/runs/profile_640_fp16_archery_target/yolo26n/`
 
 If your run bundle has no detector rows, the helper reports can stop with:
 
@@ -1257,7 +1299,7 @@ Important runtime defaults now in effect:
 - `TARGET_MEMORY_LEVEL=1`
 - `MONITORING_ERRORS_FATAL=0`
 - `RUN_ARTIFACTS_ENABLE=1`
-- `PRINT_HEALTH=0` unless you enable it in the launch
+- `PRINT_HEALTH=1`
 
 Useful debug overrides:
 

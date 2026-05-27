@@ -4,6 +4,12 @@ This file is the stream-only operator note for:
 
 - `/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target`
 
+Portable path rule:
+
+- the launch scripts themselves resolve paths from the repo checkout and do not require this exact home directory
+- the command examples below use `/home/saturnzzz/skyed` as the reference clone path on this Jetson
+- on another Jetson, either clone to `~/skyed` as the standard path, or replace that prefix with the local repo root before running the command
+
 Use this README for:
 
 - MK15 video streaming
@@ -355,7 +361,14 @@ export CAMERA_FPS_D=1
 
 Do not use this streaming note as the source-of-truth for the record-enabled variant.
 
-Use the dedicated recording operator note:
+Use the dedicated recording wrapper:
+
+```bash
+bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/run_mk15_yolo_gimbal_rtsp_record.sh
+```
+
+That wrapper keeps the normal full-application defaults, but forces `RAW_RECORD_ENABLE=1`.
+Use the dedicated recording operator note for the rest of the flow:
 
 - [recordings/README.md](/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/README.md)
 

@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="${SCRIPT_DIR}"
-MODEL_DIR="${ROOT_DIR}/model"
+MODEL_DIR="${MODEL_DIR:-${ROOT_DIR}/model}"
 source "${ROOT_DIR}/skyped_profile_runtime.sh"
 PYTHON_BIN="$(skyped_default_python_bin "${SKYPED_REPO_ROOT}/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python")"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -15,6 +15,7 @@ DEFAULT_LABEL="${DEFAULT_LABEL:-target_face}"
 LABELS_SOURCE="${LABELS_SOURCE:-}"
 SOURCE_DIR="$(dirname "${WEIGHTS}")"
 SOURCE_STEM="$(basename "${WEIGHTS%.pt}")"
+GENERATED_ONNX="${SOURCE_DIR}/${SOURCE_STEM}.onnx"
 
 mkdir -p "${MODEL_DIR}"
 
@@ -42,7 +43,10 @@ print(out)
 PY
 )
 
-cp -f "${SOURCE_DIR}/${SOURCE_STEM}.onnx" "${MODEL_DIR}/${MODEL_BASENAME}.onnx"
+cp -f "${GENERATED_ONNX}" "${MODEL_DIR}/${MODEL_BASENAME}.onnx"
+if [[ "${SOURCE_DIR}" == "${MODEL_DIR}" && "${GENERATED_ONNX}" != "${MODEL_DIR}/${MODEL_BASENAME}.onnx" ]]; then
+  rm -f "${GENERATED_ONNX}"
+fi
 if [[ -n "${LABELS_SOURCE}" ]]; then
   cp -f "${LABELS_SOURCE}" "${MODEL_DIR}/labels.txt"
 else

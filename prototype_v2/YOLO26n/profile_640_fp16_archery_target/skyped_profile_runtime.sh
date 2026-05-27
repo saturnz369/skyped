@@ -7,7 +7,11 @@ SKYPED_PROFILE_RUNTIME_SOURCED=1
 
 SKYPED_PROFILE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKYPED_PROFILE_NAME="$(basename "${SKYPED_PROFILE_DIR}")"
+SKYPED_MODEL_FAMILY="$(basename "$(dirname "${SKYPED_PROFILE_DIR}")")"
+SKYPED_MODEL_VARIANT="$(printf '%s' "${SKYPED_MODEL_FAMILY}" | tr '[:upper:]' '[:lower:]')"
 SKYPED_REPO_ROOT="$(cd "${SKYPED_PROFILE_DIR}/../.." && pwd)"
+export SKYPED_MODEL_FAMILY
+export SKYPED_MODEL_VARIANT
 
 if [[ -z "${HOST_RUNTIME_ROOT:-}" && -n "${HOST_RUNTIME_DIR:-}" ]]; then
   HOST_RUNTIME_ROOT="${HOST_RUNTIME_DIR}"
@@ -35,6 +39,20 @@ skyped_source_host_env() {
   if [[ -z "${HOST_RUNTIME_ROOT:-}" && -n "${HOST_RUNTIME_DIR:-}" ]]; then
     HOST_RUNTIME_ROOT="${HOST_RUNTIME_DIR}"
     export HOST_RUNTIME_ROOT
+  fi
+}
+
+skyped_apply_runtime_layout() {
+  local requested_runs_root="${HOST_RUNTIME_RUNS_ROOT:-}"
+  if [[ -n "${requested_runs_root}" ]]; then
+    case "${requested_runs_root%/}" in
+      */"${SKYPED_MODEL_VARIANT}")
+        ;;
+      *)
+        HOST_RUNTIME_RUNS_ROOT="${requested_runs_root%/}/${SKYPED_MODEL_VARIANT}"
+        export HOST_RUNTIME_RUNS_ROOT
+        ;;
+    esac
   fi
 }
 
@@ -97,3 +115,4 @@ skyped_profile_binary_path() {
 }
 
 skyped_source_host_env
+skyped_apply_runtime_layout

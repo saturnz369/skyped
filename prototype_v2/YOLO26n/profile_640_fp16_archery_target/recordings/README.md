@@ -4,6 +4,12 @@ This file is the recording-only operator note for:
 
 - `/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target`
 
+Portable path rule:
+
+- the launch scripts themselves resolve paths from the repo checkout and do not require this exact home directory
+- the command examples below use `/home/saturnzzz/skyed` as the reference clone path on this Jetson
+- on another Jetson, either clone to `~/skyed` as the standard path, or replace that prefix with the local repo root before running the command
+
 Use this README only when you intentionally want:
 
 - the normal full MK15 + gimbal application launch with clean recording enabled
@@ -29,8 +35,21 @@ Machine-local launch note:
 - use that file for `DISPLAY`, `SERIAL_DEVICE`, `PYTHON_BIN`, and optional `HOST_RUNTIME_RUNS_ROOT`
 
 ```bash
+bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/run_mk15_yolo_gimbal_rtsp_record.sh
+```
+
+Wrapper meaning:
+
+- same defaults as the normal MK15 full-control launcher
+- recording is forced on here with `RAW_RECORD_ENABLE=1`
+- env overrides still work before launch, same as the normal wrapper
+
+## Recording-Enabled Full Explicit Launch
+
+Use this when you want every important recording/control setting visible in one place before launching the same recording wrapper:
+
+```bash
 cd /home/saturnzzz/skyed
-export RAW_RECORD_ENABLE=1
 export SHOW=1
 export RTSP_ENABLE=1
 export RTSP_PORT=8554
@@ -98,12 +117,13 @@ export MAV_SOURCE_COMPONENT=191
 export MAV_TARGET_SYSTEM=1
 export MAV_TARGET_COMPONENT=154
 export GIMBAL_DEVICE_ID=154
+export RAW_RECORD_ENABLE=1
 export METADATA_MAX_AGE_MS=150
 export MONITORING_ERRORS_FATAL=0
 export PRINT_HEALTH=1
 export HEALTH_PRINT_INTERVAL_SEC=1.0
 export RUN_ARTIFACTS_ENABLE=1
-bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/streaming/run_mk15_yolo_gimbal_rtsp.sh
+bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/run_mk15_yolo_gimbal_rtsp_record.sh
 ```
 
 Preflight hold-angle note:
@@ -153,6 +173,8 @@ RUNS_ROOT/YYYYMMDD-HHMMSS/health_log.jsonl
 RUNS_ROOT/YYYYMMDD-HHMMSS/deepstream.log
 RUNS_ROOT/YYYYMMDD-HHMMSS/performance_summary.txt
 ```
+
+For comparison across runs, use `performance_summary.txt`. It is the aggregated run summary for FPS, latency, metadata age, dropped frames, and carried timestamps. The live `CAMERA: ... | YOLO: ... | CONTROL: ...` lines are just operator snapshots and should not be copied into the README as if they were run averages.
 
 Stop the run with `Ctrl+C`.
 
