@@ -14,8 +14,6 @@ Use this README only when you intentionally want:
 
 - the normal full MK15 + gimbal application launch with clean recording enabled
 - run-bundled recording artifacts
-- failure-frame extraction
-- detector-miss fallback extraction
 
 Important separation:
 
@@ -35,6 +33,17 @@ Machine-local launch note:
 - use that file for `DISPLAY`, `SERIAL_DEVICE`, `PYTHON_BIN`, and optional `HOST_RUNTIME_RUNS_ROOT`
 
 ```bash
+bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/run_mk15_yolo_gimbal_rtsp_record.sh
+```
+
+If you want the additional search before the gimbal reaches fail state, use these overrides before the same launcher:
+
+```bash
+export FINAL_SWEEP_ENABLE=1
+export FINAL_SWEEP_PITCH_DEG=-45.0
+export FINAL_SWEEP_YAW_RATE_DPS=90.0
+export FINAL_SWEEP_PITCH_RATE_DPS=90.0
+export FINAL_SWEEP_EDGE_DWELL_MS=0
 bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/run_mk15_yolo_gimbal_rtsp_record.sh
 ```
 
@@ -178,62 +187,6 @@ For comparison across runs, use `performance_summary.txt`. It is the aggregated 
 
 Stop the run with `Ctrl+C`.
 
-## Extract Failure Frames After The Run
-
-After stopping the test:
-
-```bash
-bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/extract_latest_failure_frames.sh
-```
-
-The extractor creates:
-
-```text
-RUNS_ROOT/YYYYMMDD-HHMMSS/recording_clean_failure_frames/
-RUNS_ROOT/YYYYMMDD-HHMMSS/recording_clean_failure_frames.zip
-```
-
-Use the `.zip` for labeling on the PC.
-
-## Manual Fallback Extractor For A Specific Recording
-
-If the live bridge-based extractor is not available for that run, use the detector-miss fallback on one recording at a time.
-
-Recommended on Jetson: keep it on CPU.
-
-```bash
-source ~/skyped_host_runtime/env/jetson.env
-cd /home/saturnzzz/skyed
-
-"${PYTHON_BIN:-/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python}" \
-/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/extract_detector_miss_frames_from_video.py \
---video "${RUNS_ROOT:-/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/runs}/latest/recording_clean.mkv" \
---weights /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/model/best.pt \
---class-id 0 \
---conf 0.10 \
---imgsz 640 \
---min-miss-frames 6 \
---max-miss-frames 600 \
---frames-per-segment 4 \
---progress-every 300 \
---device cpu
-```
-
-This fallback creates:
-
-```text
-RUNS_ROOT/YYYYMMDD-HHMMSS/recording_clean_detector_miss_frames/
-RUNS_ROOT/YYYYMMDD-HHMMSS/recording_clean_detector_miss_frames.zip
-```
-
-Keep:
-
-```bash
---device cpu
-```
-
-unless you intentionally want to test the faster GPU replay path again.
-
 ## Old Loose-File Behavior
 
 If you want the old non-bundled behavior:
@@ -245,9 +198,3 @@ export RUN_ARTIFACTS_ENABLE=0
 ## Terminal Count
 
 For the real flight/test launch, use one terminal for the main command.
-
-After the run is stopped, use the same terminal or a new terminal to run the extractor.
-
-Do not run the extractor while the main tracking command is still recording.
-
-For fallback extraction, run only one video at a time and wait for the first zip to finish before starting the second.

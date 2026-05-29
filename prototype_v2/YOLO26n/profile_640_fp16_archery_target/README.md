@@ -128,8 +128,8 @@ This is the current known-good state of the profile:
 - stale metadata is age-gated in the Python bridge
 - monitoring branch errors are disposable by default
 - run artifacts are bundled automatically under `RUNS_ROOT/<tag>/`
-  - default is repo-local `runs/<tag>/`
-  - set `HOST_RUNTIME_RUNS_ROOT` or `RUNS_ROOT` if you want them outside git
+  - default is machine-local host runtime under `~/skyped_host_runtime/runs/profile_640_fp16_archery_target/yolo26n/<tag>/`
+  - set `HOST_RUNTIME_RUNS_ROOT` or `RUNS_ROOT` only if you want a different local run root
 - health printing / health log / latency summary are integrated
 - Level 1 target memory is integrated in the Python bridge:
   - when visual target is lost briefly, hold/coast on the last trusted gimbal angle
@@ -709,12 +709,8 @@ Inside this active profile, the main files that matter are:
   - infer config
 - `config/tracker_config.txt`
   - tracker config
-- `tools/extract_latest_failure_frames.sh`
-  - latest run failure-frame extractor
 - `tools/bridge_latency_report.py`
   - latency summary
-- `tools/bridge_failure_report.py`
-  - failure-window summary
 
 Practical rule:
 
@@ -876,9 +872,12 @@ Level 1 target-memory note:
 - `TARGET_MEMORY_ENABLE=1` enables the current last-angle recovery layer
 - if YOLO/tracker misses briefly, the bridge stays in `LOST_COAST` and keeps the last trusted angle
 - after `PREDICT_TIMEOUT_MS`, it enters `LOCAL_SEARCH` around the remembered yaw/pitch
-- after local search timeout, it reports `WIDE_SEARCH` or `MISSION_RETRY_OR_FAIL`
+- after local search timeout, it enters `WIDE_SEARCH`
+- if `FINAL_SWEEP_ENABLE=1`, it then runs one last test-only `FINAL_SWEEP`: pitch to `FINAL_SWEEP_PITCH_DEG`, yaw to left limit, then yaw across to right limit
+- if final sweep is disabled or still fails, it reports `MISSION_RETRY_OR_FAIL`
 - set `TARGET_MEMORY_ENABLE=0` to return to the old pure visual-control behavior
 - if recovery fully fails, `MISSION_RETRY_OR_FAIL` recenters the gimbal to neutral instead of leaving it parked on the last lost angle
+- keep `FINAL_SWEEP_ENABLE=0` for the current baseline prototype; enable it only when you intentionally want the late-stage reacquisition sweep during testing
 
 Future target-memory levels to come back to:
 
@@ -894,6 +893,17 @@ Future target-memory levels to come back to:
 This is the normal one-shot flight/test launcher:
 
 ```bash
+bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/streaming/run_mk15_yolo_gimbal_rtsp.sh
+```
+
+If you want the additional search before the gimbal reaches fail state, use these overrides before the same launcher:
+
+```bash
+export FINAL_SWEEP_ENABLE=1
+export FINAL_SWEEP_PITCH_DEG=-45.0
+export FINAL_SWEEP_YAW_RATE_DPS=90.0
+export FINAL_SWEEP_PITCH_RATE_DPS=90.0
+export FINAL_SWEEP_EDGE_DWELL_MS=0
 bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/streaming/run_mk15_yolo_gimbal_rtsp.sh
 ```
 
@@ -916,6 +926,17 @@ If this Jetson intentionally overrides `RTSP_HOST_IP` in `~/skyped_host_runtime/
 One-shot recording launcher:
 
 ```bash
+bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/run_mk15_yolo_gimbal_rtsp_record.sh
+```
+
+If you want the additional search before the gimbal reaches fail state during a recording run, use these overrides before the same launcher:
+
+```bash
+export FINAL_SWEEP_ENABLE=1
+export FINAL_SWEEP_PITCH_DEG=-45.0
+export FINAL_SWEEP_YAW_RATE_DPS=90.0
+export FINAL_SWEEP_PITCH_RATE_DPS=90.0
+export FINAL_SWEEP_EDGE_DWELL_MS=0
 bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/recordings/run_mk15_yolo_gimbal_rtsp_record.sh
 ```
 
@@ -1027,15 +1048,14 @@ Typical files inside one run:
 
 Use `performance_summary.txt` for run-to-run comparison. It is the run-level aggregate for FPS, latency, metadata age, dropped frames, and carried timestamps. The live `CAMERA: ... | YOLO: ... | CONTROL: ...` health line is for operator monitoring only; it is a snapshot, not the summary.
 
-Current helper tools prefer `runs/latest/` automatically:
+Current helper tool prefers `runs/latest/` automatically:
 
-- `tools/extract_latest_failure_frames.sh`
 - `tools/bridge_latency_report.py`
-- `tools/bridge_failure_report.py`
 
 Practical note:
 
-- if `HOST_RUNTIME_RUNS_ROOT` is set in `~/skyped_host_runtime/env/jetson.env`, that external path becomes `RUNS_ROOT`
+- by default, launchers place run bundles under `~/skyped_host_runtime/runs/profile_640_fp16_archery_target/yolo26n/`
+- if `HOST_RUNTIME_RUNS_ROOT` is set in `~/skyped_host_runtime/env/jetson.env`, that override becomes `RUNS_ROOT`
 - on this Jetson, the verified run bundle path is under:
   - `/home/saturnzzz/skyped_host_runtime/runs/profile_640_fp16_archery_target/yolo26n/`
 
@@ -1074,20 +1094,6 @@ That means the recording is valid dataset material and does not include:
 ```bash
 source ~/skyped_host_runtime/env/jetson.env
 python3 /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/bridge_latency_report.py
-```
-
-### Failure Summary
-
-```bash
-source ~/skyped_host_runtime/env/jetson.env
-python3 /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/bridge_failure_report.py
-```
-
-### Detector-Miss Fallback On The Recorded Video
-
-```bash
-source ~/skyped_host_runtime/env/jetson.env
-"${PYTHON_BIN:-/home/saturnzzz/skyed/third_party/DeepStream-Yolo/.venv-yolo26-sys/bin/python}" /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/tools/extract_detector_miss_frames_from_video.py --video "${RUNS_ROOT:-/home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/runs}/latest/recording_clean.mkv" --weights /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/model/best.pt --class-id 0 --conf 0.10 --imgsz 640 --min-miss-frames 6 --max-miss-frames 600 --frames-per-segment 4 --progress-every 300 --device cpu
 ```
 
 ## Runtime Architecture
@@ -1249,6 +1255,7 @@ LOCKED_VISUAL
 -> LOST_POINT_TO_LAST_ANGLE: keep pointing at remembered direction
 -> LOCAL_SEARCH: small smooth search around remembered yaw/pitch
 -> WIDE_SEARCH: fallback search pitch and wider local yaw motion
+-> optional FINAL_SWEEP: fixed downward pitch plus full yaw sweep for test-time reacquisition
 -> MISSION_RETRY_OR_FAIL: tell logs/offboard that visual recovery failed
 ```
 
@@ -1447,7 +1454,7 @@ Required source pieces for this profile:
 Important dependency note:
 
 - the profile tree alone is not enough to bring the field stack up
-- the `skyed` workspace now carries its own `ultralytics` package copy for model export and detector-miss extraction
+- the `skyed` workspace now carries its own `ultralytics` package copy for model export
 - the `skyed` workspace also carries a vendored `DeepStream-Yolo` tree and IMX412 vendor package copy
 - the Jetson camera driver package must be present for IMX412
 - the DeepStream-Yolo tree must be present for the current launch and bridge path
@@ -1468,5 +1475,5 @@ Next work should mainly be:
 
 1. model quality improvements under real scenes
 2. controlled comparisons across power modes
-3. dataset growth from real failure frames and clean field video
+3. dataset growth from real field video
 4. only then deeper control-loop redesigns, if measurements justify them

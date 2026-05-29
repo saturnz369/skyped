@@ -9,7 +9,7 @@ Main profile:
 Vendored dependencies inside this workspace:
 
 - `prototype_v2/ultralytics`
-  - local Python package copy used by model export and detector-miss extraction
+  - local Python package copy used by model export helpers
 - `third_party/DeepStream-Yolo`
   - local DeepStream / Jetson integration tree used by the profile launch scripts
 - `vendor/e-CAM121_CUONX`

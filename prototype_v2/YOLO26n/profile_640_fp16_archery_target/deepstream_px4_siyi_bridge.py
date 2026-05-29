@@ -216,6 +216,10 @@ class TargetMemoryState:
     predicted_pitch_deg: float | None = None
     local_search_offset_yaw_deg: float = 0.0
     local_search_offset_pitch_deg: float = 0.0
+    final_sweep_start_mono_ns: int | None = None
+    final_sweep_initial_yaw_deg: float | None = None
+    final_sweep_initial_pitch_deg: float | None = None
+    final_sweep_completed: bool = False
     reacquired: bool = False
     candidate_from_lost: bool = False
 
@@ -399,6 +403,36 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=env_float_default("WIDE_SEARCH_TIMEOUT_MS", 5000.0),
         help="How long to remain in wide search before reporting mission retry/fail",
+    )
+    parser.add_argument(
+        "--final-sweep-enable",
+        action="store_true",
+        default=env_bool_default("FINAL_SWEEP_ENABLE", False),
+        help="Enable an optional final pitch-down yaw sweep after wide search and before mission retry/fail",
+    )
+    parser.add_argument(
+        "--final-sweep-pitch-deg",
+        type=float,
+        default=env_float_default("FINAL_SWEEP_PITCH_DEG", -45.0),
+        help="Fixed pitch angle used by the optional final sweep state",
+    )
+    parser.add_argument(
+        "--final-sweep-yaw-rate-dps",
+        type=float,
+        default=env_float_default("FINAL_SWEEP_YAW_RATE_DPS", 90.0),
+        help="Yaw sweep rate used by the optional final sweep state",
+    )
+    parser.add_argument(
+        "--final-sweep-pitch-rate-dps",
+        type=float,
+        default=env_float_default("FINAL_SWEEP_PITCH_RATE_DPS", 90.0),
+        help="Pitch move rate used to reach the final sweep pitch reference",
+    )
+    parser.add_argument(
+        "--final-sweep-edge-dwell-ms",
+        type=float,
+        default=env_float_default("FINAL_SWEEP_EDGE_DWELL_MS", 0.0),
+        help="Optional dwell time after pitch align and after reaching left yaw edge during the final sweep",
     )
     parser.add_argument(
         "--local-search-initial-deg",
@@ -948,6 +982,97 @@ def _target_memory_search_offsets(
     return yaw_offset, pitch_offset
 
 
+def _target_memory_reset_final_sweep(memory: TargetMemoryState) -> None:
+    memory.final_sweep_start_mono_ns = None
+    memory.final_sweep_initial_yaw_deg = None
+    memory.final_sweep_initial_pitch_deg = None
+
+
+def _target_memory_reset_loss_episode(memory: TargetMemoryState) -> None:
+    _target_memory_reset_final_sweep(memory)
+    memory.final_sweep_completed = False
+
+
+def _linear_interpolate(start: float, end: float, progress: float) -> float:
+    return start + (end - start) * clamp(progress, 0.0, 1.0)
+
+
+def _target_memory_plan_final_sweep(
+    *,
+    memory: TargetMemoryState,
+    now_ns: int,
+    args: argparse.Namespace,
+) -> tuple[float | None, float | None]:
+    if memory.final_sweep_start_mono_ns is None:
+        memory.final_sweep_start_mono_ns = now_ns
+        memory.final_sweep_initial_yaw_deg = clamp(
+            memory.predicted_yaw_deg
+            if memory.predicted_yaw_deg is not None
+            else (memory.last_seen_yaw_target_deg or 0.0),
+            args.min_yaw_angle_deg,
+            args.max_yaw_angle_deg,
+        )
+        memory.final_sweep_initial_pitch_deg = clamp(
+            memory.predicted_pitch_deg
+            if memory.predicted_pitch_deg is not None
+            else (memory.last_seen_pitch_target_deg or 0.0),
+            args.min_pitch_angle_deg,
+            args.max_pitch_angle_deg,
+        )
+
+    initial_yaw = memory.final_sweep_initial_yaw_deg
+    initial_pitch = memory.final_sweep_initial_pitch_deg
+    if initial_yaw is None or initial_pitch is None or memory.final_sweep_start_mono_ns is None:
+        return None, None
+
+    sweep_elapsed_s = max(0.0, (now_ns - memory.final_sweep_start_mono_ns) / 1e9)
+    dwell_s = max(0.0, args.final_sweep_edge_dwell_ms) / 1000.0
+    pitch_target = clamp(args.final_sweep_pitch_deg, args.min_pitch_angle_deg, args.max_pitch_angle_deg)
+    yaw_left = args.min_yaw_angle_deg
+    yaw_right = args.max_yaw_angle_deg
+    pitch_rate = min(max(abs(args.final_sweep_pitch_rate_dps), 1e-3), max(abs(args.max_pitch_rate_dps), 1e-3))
+    yaw_rate = min(max(abs(args.final_sweep_yaw_rate_dps), 1e-3), max(abs(args.max_yaw_rate_dps), 1e-3))
+    pitch_phase_s = abs(pitch_target - initial_pitch) / pitch_rate
+    yaw_left_phase_s = abs(yaw_left - initial_yaw) / yaw_rate
+    yaw_right_phase_s = abs(yaw_right - yaw_left) / yaw_rate
+
+    phase_elapsed_s = sweep_elapsed_s
+    predicted_pitch = pitch_target
+    predicted_yaw = initial_yaw
+
+    if phase_elapsed_s <= pitch_phase_s:
+        predicted_pitch = _linear_interpolate(initial_pitch, pitch_target, phase_elapsed_s / max(pitch_phase_s, 1e-6))
+    else:
+        phase_elapsed_s -= pitch_phase_s
+        if phase_elapsed_s <= dwell_s:
+            predicted_pitch = pitch_target
+        else:
+            phase_elapsed_s -= dwell_s
+            if phase_elapsed_s <= yaw_left_phase_s:
+                predicted_yaw = _linear_interpolate(initial_yaw, yaw_left, phase_elapsed_s / max(yaw_left_phase_s, 1e-6))
+            else:
+                phase_elapsed_s -= yaw_left_phase_s
+                if phase_elapsed_s <= dwell_s:
+                    predicted_yaw = yaw_left
+                elif phase_elapsed_s <= dwell_s + yaw_right_phase_s:
+                    phase_elapsed_s -= dwell_s
+                    predicted_yaw = _linear_interpolate(
+                        yaw_left,
+                        yaw_right,
+                        phase_elapsed_s / max(yaw_right_phase_s, 1e-6),
+                    )
+                else:
+                    return None, None
+
+    memory.state = "FINAL_SWEEP"
+    memory.tracking_quality = "TARGET_LOST_FINAL_SWEEP"
+    memory.local_search_offset_yaw_deg = 0.0
+    memory.local_search_offset_pitch_deg = 0.0
+    memory.predicted_yaw_deg = clamp(predicted_yaw, args.min_yaw_angle_deg, args.max_yaw_angle_deg)
+    memory.predicted_pitch_deg = clamp(predicted_pitch, args.min_pitch_angle_deg, args.max_pitch_angle_deg)
+    return memory.predicted_pitch_deg, memory.predicted_yaw_deg
+
+
 def target_memory_plan_lost_command(
     *,
     memory: TargetMemoryState,
@@ -962,6 +1087,7 @@ def target_memory_plan_lost_command(
     memory.local_search_offset_pitch_deg = 0.0
 
     if memory.last_seen_mono_ns is None or memory.last_seen_yaw_target_deg is None or memory.last_seen_pitch_target_deg is None:
+        _target_memory_reset_loss_episode(memory)
         memory.state = "SEARCH"
         memory.tracking_quality = "SEARCHING"
         memory.predicted_yaw_deg = None
@@ -971,14 +1097,21 @@ def target_memory_plan_lost_command(
     lost_elapsed_ms = _target_memory_age_ms(memory, now_ns) or 0.0
     predicted_yaw = memory.last_seen_yaw_target_deg
     predicted_pitch = memory.last_seen_pitch_target_deg
+    wide_search_end_ms = (
+        max(args.predict_timeout_ms, args.predict_timeout_ms + args.local_search_timeout_ms)
+        + max(0.0, args.wide_search_timeout_ms)
+    )
 
     if lost_elapsed_ms <= max(0.0, args.short_lost_timeout_ms):
+        _target_memory_reset_loss_episode(memory)
         memory.state = "LOST_COAST"
         memory.tracking_quality = "TARGET_LOST_SHORT"
     elif lost_elapsed_ms <= max(args.short_lost_timeout_ms, args.predict_timeout_ms):
+        _target_memory_reset_loss_episode(memory)
         memory.state = "LOST_POINT_TO_LAST_ANGLE"
         memory.tracking_quality = "TARGET_LOST_SHORT"
     elif lost_elapsed_ms <= max(args.predict_timeout_ms, args.predict_timeout_ms + args.local_search_timeout_ms):
+        _target_memory_reset_loss_episode(memory)
         memory.state = "LOCAL_SEARCH"
         memory.tracking_quality = "TARGET_LOST_LONG"
         yaw_offset, pitch_offset = _target_memory_search_offsets(
@@ -990,10 +1123,8 @@ def target_memory_plan_lost_command(
         memory.local_search_offset_pitch_deg = pitch_offset
         predicted_yaw += yaw_offset
         predicted_pitch += pitch_offset
-    elif lost_elapsed_ms <= (
-        max(args.predict_timeout_ms, args.predict_timeout_ms + args.local_search_timeout_ms)
-        + max(0.0, args.wide_search_timeout_ms)
-    ):
+    elif lost_elapsed_ms <= wide_search_end_ms:
+        _target_memory_reset_loss_episode(memory)
         memory.state = "WIDE_SEARCH"
         memory.tracking_quality = "TARGET_LOST_LONG"
         yaw_offset, pitch_offset = _target_memory_search_offsets(
@@ -1005,7 +1136,24 @@ def target_memory_plan_lost_command(
         memory.local_search_offset_pitch_deg = pitch_offset
         predicted_yaw += yaw_offset
         predicted_pitch = args.search_pitch_default + pitch_offset
+    elif args.final_sweep_enable and not memory.final_sweep_completed:
+        final_sweep_pitch_deg, final_sweep_yaw_deg = _target_memory_plan_final_sweep(
+            memory=memory,
+            now_ns=now_ns,
+            args=args,
+        )
+        if final_sweep_pitch_deg is not None and final_sweep_yaw_deg is not None:
+            return final_sweep_pitch_deg, final_sweep_yaw_deg
+        memory.final_sweep_completed = True
+        _target_memory_reset_final_sweep(memory)
+        memory.state = "MISSION_RETRY_OR_FAIL"
+        memory.tracking_quality = "REACQUIRE_FAILED"
+        predicted_yaw = 0.0
+        predicted_pitch = 0.0
+        memory.local_search_offset_yaw_deg = 0.0
+        memory.local_search_offset_pitch_deg = 0.0
     else:
+        _target_memory_reset_final_sweep(memory)
         memory.state = "MISSION_RETRY_OR_FAIL"
         memory.tracking_quality = "REACQUIRE_FAILED"
         predicted_yaw = 0.0
@@ -1059,6 +1207,7 @@ def target_memory_update_visible(
         "LOST_POINT_TO_LAST_ANGLE",
         "LOCAL_SEARCH",
         "WIDE_SEARCH",
+        "FINAL_SWEEP",
         "MISSION_RETRY_OR_FAIL",
     }
     if was_lost_state and not stable:
@@ -1093,6 +1242,7 @@ def target_memory_update_visible(
     memory.predicted_pitch_deg = target_pitch_deg
     memory.local_search_offset_yaw_deg = 0.0
     memory.local_search_offset_pitch_deg = 0.0
+    _target_memory_reset_loss_episode(memory)
 
 
 def emit_state(state: PrototypeV2BridgeState, print_state: bool, state_handle) -> None:

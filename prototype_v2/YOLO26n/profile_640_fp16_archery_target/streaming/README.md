@@ -198,6 +198,18 @@ cd /home/saturnzzz/skyed
 bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/streaming/run_mk15_yolo_gimbal_rtsp.sh
 ```
 
+If you want the additional search before the gimbal reaches fail state, use these overrides before the same launcher:
+
+```bash
+cd /home/saturnzzz/skyed
+export FINAL_SWEEP_ENABLE=1
+export FINAL_SWEEP_PITCH_DEG=-45.0
+export FINAL_SWEEP_YAW_RATE_DPS=90.0
+export FINAL_SWEEP_PITCH_RATE_DPS=90.0
+export FINAL_SWEEP_EDGE_DWELL_MS=0
+bash /home/saturnzzz/skyed/prototype_v2/YOLO26n/profile_640_fp16_archery_target/streaming/run_mk15_yolo_gimbal_rtsp.sh
+```
+
 This wrapper already carries the current working defaults:
 
 - `SENSOR_ID=0`
@@ -376,8 +388,6 @@ That file carries:
 
 - the full recording-enabled launch block
 - run bundle recording behavior
-- failure-frame extraction
-- detector-miss fallback extraction
 
 ## Stream-Side Notes About The 12 Cleanups
 

@@ -125,6 +125,11 @@ SHORT_LOST_TIMEOUT_MS="${SHORT_LOST_TIMEOUT_MS:-450}"
 PREDICT_TIMEOUT_MS="${PREDICT_TIMEOUT_MS:-1200}"
 LOCAL_SEARCH_TIMEOUT_MS="${LOCAL_SEARCH_TIMEOUT_MS:-3000}"
 WIDE_SEARCH_TIMEOUT_MS="${WIDE_SEARCH_TIMEOUT_MS:-5000}"
+FINAL_SWEEP_ENABLE="${FINAL_SWEEP_ENABLE:-0}"
+FINAL_SWEEP_PITCH_DEG="${FINAL_SWEEP_PITCH_DEG:--45.0}"
+FINAL_SWEEP_YAW_RATE_DPS="${FINAL_SWEEP_YAW_RATE_DPS:-90.0}"
+FINAL_SWEEP_PITCH_RATE_DPS="${FINAL_SWEEP_PITCH_RATE_DPS:-90.0}"
+FINAL_SWEEP_EDGE_DWELL_MS="${FINAL_SWEEP_EDGE_DWELL_MS:-0}"
 LOCAL_SEARCH_INITIAL_DEG="${LOCAL_SEARCH_INITIAL_DEG:-3.0}"
 LOCAL_SEARCH_MAX_DEG="${LOCAL_SEARCH_MAX_DEG:-10.0}"
 LOCAL_SEARCH_PITCH_SCALE="${LOCAL_SEARCH_PITCH_SCALE:-0.35}"
@@ -149,7 +154,7 @@ HEALTH_PRINT_INTERVAL_SEC="${HEALTH_PRINT_INTERVAL_SEC:-1.0}"
 HEALTH_STATE_FILE="${HEALTH_STATE_FILE:-}"
 HEALTH_TEMP_ZONE="${HEALTH_TEMP_ZONE:-tj-thermal}"
 RUN_ARTIFACTS_ENABLE="${RUN_ARTIFACTS_ENABLE:-1}"
-RUNS_ROOT="${RUNS_ROOT:-${HOST_RUNTIME_RUNS_ROOT:-${SCRIPT_DIR}/runs}}"
+RUNS_ROOT="${RUNS_ROOT:-${HOST_RUNTIME_RUNS_ROOT:-${HOST_RUNTIME_ROOT}/runs/${SKYPED_PROFILE_NAME}/${SKYPED_MODEL_VARIANT}}}"
 RUN_TAG="${RUN_TAG:-$(date +%Y%m%d-%H%M%S)}"
 RUN_DIR=""
 CONFIG_USED_FILE=""
@@ -269,6 +274,11 @@ if [[ "${RUN_ARTIFACTS_ENABLE}" == "1" ]]; then
         echo "  predict_timeout_ms: ${PREDICT_TIMEOUT_MS}"
         echo "  local_search_timeout_ms: ${LOCAL_SEARCH_TIMEOUT_MS}"
         echo "  wide_search_timeout_ms: ${WIDE_SEARCH_TIMEOUT_MS}"
+        echo "  final_sweep_enable: ${FINAL_SWEEP_ENABLE}"
+        echo "  final_sweep_pitch_deg: ${FINAL_SWEEP_PITCH_DEG}"
+        echo "  final_sweep_yaw_rate_dps: ${FINAL_SWEEP_YAW_RATE_DPS}"
+        echo "  final_sweep_pitch_rate_dps: ${FINAL_SWEEP_PITCH_RATE_DPS}"
+        echo "  final_sweep_edge_dwell_ms: ${FINAL_SWEEP_EDGE_DWELL_MS}"
         echo "  local_search_initial_deg: ${LOCAL_SEARCH_INITIAL_DEG}"
         echo "  local_search_max_deg: ${LOCAL_SEARCH_MAX_DEG}"
         echo "  local_search_pitch_scale: ${LOCAL_SEARCH_PITCH_SCALE}"
@@ -331,6 +341,10 @@ CMD=(
     --predict-timeout-ms "${PREDICT_TIMEOUT_MS}"
     --local-search-timeout-ms "${LOCAL_SEARCH_TIMEOUT_MS}"
     --wide-search-timeout-ms "${WIDE_SEARCH_TIMEOUT_MS}"
+    --final-sweep-pitch-deg "${FINAL_SWEEP_PITCH_DEG}"
+    --final-sweep-yaw-rate-dps "${FINAL_SWEEP_YAW_RATE_DPS}"
+    --final-sweep-pitch-rate-dps "${FINAL_SWEEP_PITCH_RATE_DPS}"
+    --final-sweep-edge-dwell-ms "${FINAL_SWEEP_EDGE_DWELL_MS}"
     --local-search-initial-deg "${LOCAL_SEARCH_INITIAL_DEG}"
     --local-search-max-deg "${LOCAL_SEARCH_MAX_DEG}"
     --local-search-pitch-scale "${LOCAL_SEARCH_PITCH_SCALE}"
@@ -343,6 +357,10 @@ CMD=(
     --secondary-control-component "${SECONDARY_CONTROL_COMPONENT}"
     --control-api "${CONTROL_API}"
 )
+
+if [[ "${FINAL_SWEEP_ENABLE}" == "1" ]]; then
+    CMD+=(--final-sweep-enable)
+fi
 
 if [[ -n "${METADATA_STATE_FILE}" ]]; then
     CMD+=(--metadata-state-file "${METADATA_STATE_FILE}")

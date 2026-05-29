@@ -43,10 +43,13 @@ skyped_source_host_env() {
 }
 
 skyped_apply_runtime_layout() {
-  local requested_runs_root="${HOST_RUNTIME_RUNS_ROOT:-}"
+  local default_runs_root="${HOST_RUNTIME_ROOT}/runs/${SKYPED_PROFILE_NAME}"
+  local requested_runs_root="${HOST_RUNTIME_RUNS_ROOT:-${default_runs_root}}"
   if [[ -n "${requested_runs_root}" ]]; then
     case "${requested_runs_root%/}" in
       */"${SKYPED_MODEL_VARIANT}")
+        HOST_RUNTIME_RUNS_ROOT="${requested_runs_root%/}"
+        export HOST_RUNTIME_RUNS_ROOT
         ;;
       *)
         HOST_RUNTIME_RUNS_ROOT="${requested_runs_root%/}/${SKYPED_MODEL_VARIANT}"
